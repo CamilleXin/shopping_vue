@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车</title>
+</head>
+<script src="//unpkg.com/vue/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.3.9/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<body>
+<div id="app">
+    <template>
+        <el-table ref="multipleTable" :data="tableData3" tooltip-effect="dark" style="width: 100%"
+                  @selection-change="handleSelectionChange">
+            <el-table-column type="selection" width="55">
+            </el-table-column>
+            <el-table-column label="商品名称" width="120">
+                <template slot-scope="scope">{{ scope.row.productName}}</template>
+            </el-table-column>
+            <el-table-column label="单价" width="120">
+                <template slot-scope="scope">{{ scope.row.productPrice | formatMoney}}</template>
+            </el-table-column>
+            <el-table-column label="购买数量">
+                <template slot-scope="scope">
+                    <el-input-number v-model="scope.row.productQuentity" @change="handleChange" size="mini" :min="1"
+                                     :max="99"
+                                     label="描述文字"></el-input-number>
+                </template>
+            </el-table-column>
+            <el-table-column label="商品总金额" show-overflow-tooltip>
+                <template slot-scope="scope">
+                    {{ (scope.row.productPrice * scope.row.productQuentity) | formatMoney}}
+                </template>
+            </el-table-column>
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button type="primary" icon="el-icon-edit" circle @click="dialogFormVisible = true "></el-button>
+                    <el-button type="danger" icon="el-icon-delete" circle @click="el_delete(scope.row)"></el-button>
+                </template>
+            </el-table-column>
+
+        </el-table>
+        <el-dialog title="收货地址" :visible.sync="dialogFormVisible">
+            <el-form :model="form">
+                <el-form-item label="商品名称" :label-width="formLabelWidth">
+                    <el-input v-model="form.name" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="商品单价" :label-width="formLabelWidth">
+                    <el-input v-model="form.price" auto-complete="off"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible = false">取 消</el-button>
+                <el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+            </div>
+        </el-dialog>
+
+        <div style="margin-top: 20px">
+            <el-button @click="toggleSelection()">取消选择</el-button>
+        </div>
+        <div align="right">
+            <i>
+                <div>
+                    Item total: <span>{{totalMoney | formatMoney}}&nbsp;	&nbsp;	&nbsp;</span>
+                </div>
+            </i>
+            <i>
+                <el-button type="primary">结账</el-button>
+            </i>
+        </div>
+    </template>
+
+</div>
+</body>
+<style>
+    @import url("//unpkg.com/element-ui@2.3.9/lib/theme-chalk/index.css");
+</style>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            tableData3: [],
+            multipleSelection: [],
+            totalMoney: 0,
+            dialogFormVisible: false,
+            form: {
+                name: '',
+                price: '',
+                date1: '',
+                date2: '',
+                delivery: false,
+                type: [],
+                resource: '',
+                desc: ''
+            },
+            formLabelWidth: '120px'
+        },
+        filters: {
+            formatMoney: function (value) {
+                return '￥' + value.toFixed(2)
+            }
+        },
+        mounted: function () {
+            this.$nextTick(function () {
+                var _this = this
+                axios.get('commodity.json').then(function (response) {
+                    _this.tableData3 = response.data.result.list
+                })
+            })
+        },
+        methods: {
+            toggleSelection(rows) {
+                // console.log('toggleSelection')
+                if (rows) {
+                    rows.forEach(row => {
+                        this.$refs.multipleTable.toggleRowSelection(row);
+                    });
+                } else {
+                    this.$refs.multipleTable.clearSelection();
+                }
+            },
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                this.totalPrice(val)
+            },
+            handleChange(value) {
+                this.totalPrice(this.multipleSelection)
+            },
+            totalPrice: function (val) {
+                var _this = this
+                this.totalMoney = 0
+                val.forEach(function (value, index) {
+                    _this.totalMoney += value.productPrice * value.productQuentity
+                })
+            },
+            el_delete: function (value) {
+                this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.tableData3.splice(value, 1)
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            alertDialog: function () {
+                this.dialogFormVisible = true
+            }
+        }
+    })
+</script>
+</html>
